@@ -19,6 +19,7 @@ func TestFunc(w http.ResponseWriter, r *http.Request) {
 //Create a new user using our dynamodb adapter
 //A event message it sent to the queues which are consumed by the relevant services
 func CreateAdvert(w http.ResponseWriter, r *http.Request) {
+	
 
 	repo_builder.Advert.CreateAdvert(w,r)
 }
