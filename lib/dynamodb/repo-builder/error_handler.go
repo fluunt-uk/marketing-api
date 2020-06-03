@@ -1,7 +1,7 @@
 package repo_builder
 
 import (
-	"github.com/ProjectReferral/Get-me-in/pkg/dynamodb"
+	"gitlab.com/projectreferral/util/pkg/dynamodb"
 	"net/http"
 )
 

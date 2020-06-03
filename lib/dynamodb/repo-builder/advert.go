@@ -2,9 +2,9 @@ package repo_builder
 
 import (
 	"encoding/json"
-	"github.com/ProjectReferral/Get-me-in/marketing-api/internal/models"
-	"github.com/ProjectReferral/Get-me-in/marketing-api/lib/rabbitmq"
-	"github.com/ProjectReferral/Get-me-in/pkg/dynamodb"
+	"gitlab.com/projectreferral/marketing-api/internal/models"
+	"gitlab.com/projectreferral/marketing-api/lib/rabbitmq"
+	"gitlab.com/projectreferral/util/pkg/dynamodb"
 	"net/http"
 	"net/url"
 )

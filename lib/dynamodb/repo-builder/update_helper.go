@@ -1,7 +1,7 @@
 package repo_builder
 
 import (
-	"github.com/ProjectReferral/Get-me-in/marketing-api/internal/models"
+	"gitlab.com/projectreferral/marketing-api/internal/models"
 )
 
 func (c *AdvertWrapper) UpdateValue(email string, cr *models.ChangeRequest) error{

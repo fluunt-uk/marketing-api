@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/ProjectReferral/Get-me-in/marketing-api/cmd/dep"
-	"github.com/ProjectReferral/Get-me-in/marketing-api/configs"
-	"github.com/ProjectReferral/Get-me-in/marketing-api/internal/api"
-	"github.com/ProjectReferral/Get-me-in/marketing-api/internal/models"
-	"github.com/ProjectReferral/Get-me-in/util"
+	"gitlab.com/projectreferral/marketing-api/cmd/dep"
+	"gitlab.com/projectreferral/marketing-api/configs"
+	"gitlab.com/projectreferral/marketing-api/internal/api"
+	"gitlab.com/projectreferral/marketing-api/internal/models"
+	"gitlab.com/projectreferral/util/util"
 	"os"
 )
 

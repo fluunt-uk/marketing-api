@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/ProjectReferral/Get-me-in/marketing-api/configs"
-	"github.com/ProjectReferral/Get-me-in/pkg/security"
 	"github.com/gorilla/mux"
+	"gitlab.com/projectreferral/marketing-api/configs"
+	"gitlab.com/projectreferral/util/pkg/security"
 	"log"
 	"net/http"
 )

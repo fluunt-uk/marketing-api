@@ -1,8 +1,8 @@
 package api
 
 import (
-	repo_builder "github.com/ProjectReferral/Get-me-in/marketing-api/lib/dynamodb/repo-builder"
-	"github.com/ProjectReferral/Get-me-in/marketing-api/lib/rabbitmq"
+	repo_builder "gitlab.com/projectreferral/marketing-api/lib/dynamodb/repo-builder"
+	"gitlab.com/projectreferral/marketing-api/lib/rabbitmq"
 	"net/http"
 )
 
