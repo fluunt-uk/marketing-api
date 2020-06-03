@@ -2,11 +2,18 @@ package repo_builder
 
 import (
 	"encoding/json"
+	"fmt"
 	"gitlab.com/projectreferral/marketing-api/internal/models"
 	"gitlab.com/projectreferral/marketing-api/lib/rabbitmq"
 	"gitlab.com/projectreferral/util/pkg/dynamodb"
+	"gitlab.com/projectreferral/util/pkg/http_lib"
+	_ "gitlab.com/projectreferral/util/pkg/security"
 	"net/http"
 	"net/url"
+	_ "os"
+	"strconv"
+	_ "gitlab.com/projectreferral/util/pkg/security"
+	_ "gitlab.com/projectreferral/util/pkg/http_lib"
 )
 
 type AdvertWrapper struct {
@@ -26,6 +33,73 @@ type AdvertBuilder interface {
 
 //interface with the implemented methods will be injected in this variable
 var Advert AdvertBuilder
+
+// get advertid, check if the ad exists, update user with adverts applied, update user count for advert
+// new feature we need to do - getalladvertsfromaccount
+// err := a.UpdateValue(security.GetClaimsOfJWT().Audience, )
+
+// Check if advert is premium or not, if it is then the user (if not premium) should not be allowed to apply to it,
+// the option should be greyed out.
+
+func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
+
+	var ap models.Advert // id from body
+	var ad models.Advert // ad details from body id
+
+	// Get id from body
+	errDecode := dynamodb.DecodeToMap(r.Body, &ap)
+
+	if !HandleError(errDecode, w, false){
+
+		// Check if ad exists
+		r, err := a.DC.GetItem(ap.Uuid)
+
+		if !HandleError(err, w, true){
+
+			b, _ := json.Marshal(models.ChangeRequest{
+				Field:   "applications",
+				NewMap: ad,
+				Type:    2,
+			})
+
+			// Make a patch request to accounts to update applications
+			res, patchError := http_lib.Patch("http://localhost:5001/accounts", b, map[string]string{"Authorization": w.Header().Get("Authorization")})
+
+			if !HandleError(patchError, w, false) {
+				if res.StatusCode == 200 {
+					_ = dynamodb.Unmarshal(r, &ad)
+
+					userCount, err := strconv.Atoi(ad.UserCount)
+					if err != nil {
+						fmt.Println(err)
+					}
+					maxUsers, err := strconv.Atoi(ad.MaxUsers)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					if userCount < maxUsers {
+						new_user_count := userCount + 1
+
+						// Update adverts to increase count by 1
+						err := a.UpdateValue(ad.Uuid, &models.ChangeRequest{ Field:"users_applied", NewString: strconv.Itoa(new_user_count), Type: 1})
+
+						if !HandleError(err, w, false) {
+							w.WriteHeader(http.StatusAccepted)
+						}
+					} else {
+						w.WriteHeader(http.StatusPreconditionFailed)
+					}
+				} else {
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			}
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}
+}
+
 
 //get all the adverts for a specific account
 //token validated
@@ -159,3 +233,4 @@ func (a *AdvertWrapper) GetBatchAdvert(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+

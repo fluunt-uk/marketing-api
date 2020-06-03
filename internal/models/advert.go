@@ -7,6 +7,7 @@ type Advert struct {
 	AccountId   string `json:"account_id"`
 	Title       string `json:"title"`
 	MaxUsers    string `json:"max_users"`
+	UserCount	string 	`json:"users_applied"`
 	Premium     bool   `json:"premium"`
 	ValidFrom   string `json:"valid_from"`
 	ValidTill   string `json:"valid_till"`
