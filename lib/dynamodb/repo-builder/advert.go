@@ -44,7 +44,6 @@ var Advert AdvertBuilder
 func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
 	var ap models.Advert // id from body
-	var ad models.Advert // ad details from body id
 
 	// Get id from body
 	errDecode := dynamodb.DecodeToMap(r.Body, &ap)
@@ -54,11 +53,13 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 		// Check if ad exists
 		r, err := a.DC.GetItem(ap.Uuid)
 
+		_ = dynamodb.Unmarshal(r, ap)
+
 		if !HandleError(err, w, true){
 
 			b, _ := json.Marshal(models.ChangeRequest{
 				Field:   "applications",
-				NewMap: ad,
+				NewMap: ap,
 				Type:    2,
 			})
 
@@ -67,13 +68,13 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
 			if !HandleError(patchError, w, false) {
 				if res.StatusCode == 200 {
-					_ = dynamodb.Unmarshal(r, &ad)
+					_ = dynamodb.Unmarshal(r, &ap)
 
-					userCount, err := strconv.Atoi(ad.UserCount)
+					userCount, err := strconv.Atoi(ap.UserCount)
 					if err != nil {
 						fmt.Println(err)
 					}
-					maxUsers, err := strconv.Atoi(ad.MaxUsers)
+					maxUsers, err := strconv.Atoi(ap.MaxUsers)
 					if err != nil {
 						fmt.Println(err)
 					}
@@ -82,21 +83,18 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 						new_user_count := userCount + 1
 
 						// Update adverts to increase count by 1
-						err := a.UpdateValue(ad.Uuid, &models.ChangeRequest{ Field:"users_applied", NewString: strconv.Itoa(new_user_count), Type: 1})
+						err := a.UpdateValue(ap.Uuid, &models.ChangeRequest{ Field:"users_applied", NewString: strconv.Itoa(new_user_count), Type: 1})
 
 						if !HandleError(err, w, false) {
 							w.WriteHeader(http.StatusAccepted)
 						}
-					} else {
-						w.WriteHeader(http.StatusPreconditionFailed)
 					}
-				} else {
-					w.WriteHeader(http.StatusBadRequest)
+					w.WriteHeader(http.StatusPreconditionFailed)
 				}
+				w.WriteHeader(http.StatusBadRequest)
 			}
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
 		}
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
