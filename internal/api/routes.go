@@ -13,6 +13,7 @@ func SetupEndpoints() {
 
 	_router.HandleFunc("/test", TestFunc)
 
+	_router.HandleFunc("/apply", security.WrapHandlerWithSpecialAuth(Apply, configs.AUTH_AUTHENTICATED)).Methods("POST")
 	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(CreateAdvert, configs.AUTH_AUTHENTICATED)).Methods("PUT")
 	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(DeleteAdvert, configs.AUTH_AUTHENTICATED)).Methods("DELETE")
 	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(UpdateAdvert, configs.AUTH_AUTHENTICATED)).Methods("PATCH")

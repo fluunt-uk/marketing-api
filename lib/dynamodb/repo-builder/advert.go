@@ -29,6 +29,7 @@ type AdvertBuilder interface {
 	UpdateAdvert(http.ResponseWriter, *http.Request)
 	CreateAdvert(http.ResponseWriter, *http.Request)
 	DeleteAdvert(http.ResponseWriter, *http.Request)
+	Apply(http.ResponseWriter, *http.Request)
 }
 
 //interface with the implemented methods will be injected in this variable
