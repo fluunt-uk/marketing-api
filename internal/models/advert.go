@@ -17,6 +17,7 @@ type Advert struct {
 
 //used to update user details
 type ChangeRequest struct {
+	Id 			string	`json:"id"`
 	NewString 	string 	`json:"new_value"`
 	Field		string 	`json:"field"`
 	NewMap		Advert 	`json:"new_map"`

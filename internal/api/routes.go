@@ -19,6 +19,7 @@ func SetupEndpoints() {
 	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(UpdateAdvert, configs.AUTH_AUTHENTICATED)).Methods("PATCH")
 	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(GetAdvert, configs.AUTH_AUTHENTICATED)).Methods("GET")
 	_router.HandleFunc("/adverts/query", security.WrapHandlerWithSpecialAuth(GetBatchAdverts, "")).Methods("GET")
+	_router.HandleFunc("/adverts/apply", security.WrapHandlerWithSpecialAuth(Apply, "")).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(configs.PORT, _router))
 }
