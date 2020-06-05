@@ -1,11 +1,14 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"gitlab.com/projectreferral/marketing-api/configs"
 	"gitlab.com/projectreferral/util/pkg/security"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 func SetupEndpoints() {
@@ -20,6 +23,21 @@ func SetupEndpoints() {
 	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(GetAdvert, configs.AUTH_AUTHENTICATED)).Methods("GET")
 	_router.HandleFunc("/adverts/query", security.WrapHandlerWithSpecialAuth(GetBatchAdverts, "")).Methods("GET")
 	_router.HandleFunc("/adverts/apply", security.WrapHandlerWithSpecialAuth(Apply, "")).Methods("POST")
+	_router.HandleFunc("/log", displayLog).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(configs.PORT, _router))
+}
+
+
+func displayLog(w http.ResponseWriter, r *http.Request){
+
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(path)
+
+	b, _ := ioutil.ReadFile(path + "/logs/marketingAPI_log.txt")
+
+	w.Write(b)
 }
