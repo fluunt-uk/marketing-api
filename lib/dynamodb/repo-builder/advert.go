@@ -2,12 +2,14 @@ package repo_builder
 
 import (
 	"encoding/json"
+	"fmt"
 	"gitlab.com/projectreferral/marketing-api/configs"
 	"gitlab.com/projectreferral/marketing-api/internal/models"
 	"gitlab.com/projectreferral/marketing-api/lib/rabbitmq"
 	"gitlab.com/projectreferral/util/pkg/dynamodb"
 	"gitlab.com/projectreferral/util/pkg/http_lib"
 	_ "gitlab.com/projectreferral/util/pkg/http_lib"
+	"gitlab.com/projectreferral/util/pkg/security"
 	_ "gitlab.com/projectreferral/util/pkg/security"
 	"io/ioutil"
 	"net/http"
@@ -41,19 +43,28 @@ var Advert AdvertBuilder
 // the option should be greyed out.
 func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
-	var ap models.Advert // id from body
+	var ad models.Advert // id from body
+	var ap models.Application
 
 	// Get id from body
-	errDecode := dynamodb.DecodeToMap(r.Body, &ap)
+	errDecode := dynamodb.DecodeToMap(r.Body, &ad)
 
 	if !HandleError(errDecode, w, false) {
 
 		// Check if ad exists
-		i, err := a.DC.GetItem(ap.Uuid)
+		i, err := a.DC.GetItem(ad.Uuid)
 
+		_ = dynamodb.Unmarshal(i, &ad)
 		_ = dynamodb.Unmarshal(i, &ap)
 
 		if !HandleError(err, w, true) {
+
+			appli_err := addApplicant(ad, a)
+
+			if appli_err != nil {
+				fmt.Println(appli_err)
+				return
+			}
 
 			b, _ := json.Marshal(models.ChangeRequest{
 				Field:  "applications",
@@ -67,9 +78,9 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
 			if res.StatusCode == 200 {
 
-				userCount := convertToInt(w, &ap.UserCount)
+				userCount := convertToInt(w, &ad.UserCount)
 
-				if userCount < convertToInt(w, &ap.MaxUsers) {
+				if userCount < convertToInt(w, &ad.MaxUsers) {
 					newUserCount := userCount + 1
 
 					cr := &models.ChangeRequest{
@@ -79,7 +90,7 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Update adverts to increase count by 1
-					err := a.UpdateValue(ap.Uuid, cr)
+					err := a.UpdateValue(ad.Uuid, cr)
 
 					if !HandleError(err, w, false) {
 
@@ -115,6 +126,24 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusBadRequest)
 	return
+}
+
+func addApplicant(ad models.Advert, a *AdvertWrapper) error {
+
+	// Get user that is applying to ad
+	var applyingUser models.User
+	email := security.GetClaimsOfJWT().Subject
+	t, _ := a.DC.GetItem(email)
+	_ = dynamodb.Unmarshal(t, applyingUser)
+
+	err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
+
+	if err != nil {
+		fmt.Println("Failed to add applicant")
+		return err
+	}
+	fmt.Println("Success: applicant added to ad.")
+	return nil
 }
 
 //We check for the recaptcha response and proceed
