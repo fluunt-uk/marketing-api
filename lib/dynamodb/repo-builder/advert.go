@@ -143,7 +143,6 @@ func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *A
 		body, _ := ioutil.ReadAll(res.Body)
 		_ = json.Unmarshal(body, &applyingUser)
 
-		fmt.Println(applyingUser, ad.Uuid)
 		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
 
 		if err != nil {
