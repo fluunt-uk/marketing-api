@@ -13,7 +13,7 @@ type Advert struct {
 	ValidTill   string `json:"valid_till"`
 	Company     string `json:"company"`
 	Description string `json:"description"`
-	Applicants map[string]User    `json:"applicants"`
+	Applicants map[string]User    `dynamodbav:"applicants"`
 }
 
 type Application struct {

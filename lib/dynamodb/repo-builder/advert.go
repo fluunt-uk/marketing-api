@@ -165,6 +165,9 @@ func (a *AdvertWrapper) CreateAdvert(w http.ResponseWriter, r *http.Request) {
 
 	dynamoAttr, errDecode := dynamodb.DecodeToDynamoAttribute(r.Body, &ad)
 
+	//this is to ensure we init an empty map
+	dynamodb.AddEmptyCollection(dynamoAttr, "applicants")
+
 	if !HandleError(errDecode, w, false) {
 
 		err := a.DC.CreateItem(dynamoAttr)
