@@ -59,13 +59,6 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
 		if !HandleError(err, w, true) {
 
-			appli_err := addApplicant(ad, a)
-
-			if appli_err != nil {
-				fmt.Println(appli_err)
-				return
-			}
-
 			b, _ := json.Marshal(models.ChangeRequest{
 				Field:  "applications",
 				Id:     ap.Uuid,
@@ -77,6 +70,13 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 			res, _ := http_lib.Patch(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
 
 			if res.StatusCode == 200 {
+
+				appliErr := addApplicant(ad, w, r, a)
+
+				if appliErr != nil {
+					fmt.Println(appliErr)
+					return
+				}
 
 				userCount := convertToInt(w, &ad.UserCount)
 
@@ -128,24 +128,34 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func addApplicant(ad models.Advert, a *AdvertWrapper) error {
+func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *AdvertWrapper) error {
 
-	// Get user that is applying to ad
 	var applyingUser models.User
+
 	email := security.GetClaimsOfJWT().Subject
-	t, _ := a.DC.GetItem(email)
-	_ = dynamodb.Unmarshal(t, applyingUser)
+	usr := models.User{Email: email}
 
-	err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
+	b, _ := json.Marshal(usr)
+	res, _ := http_lib.Get(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
 
-	if err != nil {
-		fmt.Println("Failed to add applicant")
-		return err
+	if res.StatusCode == 200 {
+
+		body, _ := ioutil.ReadAll(res.Body)
+		_ = json.Unmarshal(body, &applyingUser)
+
+		fmt.Println(applyingUser, ad.Uuid)
+		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println("Failed to add applicant")
+			return err
+		}
+		fmt.Println("Success: applicant added to ad.")
+		return nil
 	}
-	fmt.Println("Success: applicant added to ad.")
 	return nil
 }
-
 //We check for the recaptcha response and proceed
 //Covert the response body into appropriate models
 //Create a new user using our dynamodb adapter
