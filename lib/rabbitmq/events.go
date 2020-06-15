@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"gitlab.com/projectreferral/marketing-api/configs"
-	"gitlab.com/projectreferral/queueing-api/client"
-	"gitlab.com/projectreferral/queueing-api/client/models"
+	"gitlab.com/projectreferral/util/client"
+	"gitlab.com/projectreferral/util/client/models"
 	"log"
 	"net/http"
 )
