@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
 func SetupEndpoints() {
@@ -30,14 +29,12 @@ func SetupEndpoints() {
 
 
 func displayLog(w http.ResponseWriter, r *http.Request){
+	b, err := ioutil.ReadFile(configs.LOG_PATH)
 
-	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err.Error()) //output to main
+		w.WriteHeader(http.StatusInternalServerError)
+	}else{
+		w.Write(b)
 	}
-	fmt.Println(path)
-
-	b, _ := ioutil.ReadFile(path + "/logs/marketingAPI_log.txt")
-
-	w.Write(b)
 }

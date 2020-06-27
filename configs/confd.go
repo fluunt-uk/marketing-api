@@ -1,6 +1,7 @@
 package configs
 
 const (
+	LOG_PATH         = "../logs/marketingAPI_log.txt"
 	PORT = ":5003"
 
 	/************** DynamoDB configs *************/
