@@ -2,11 +2,20 @@ package repo_builder
 
 import (
 	"encoding/json"
+	"fmt"
+	"gitlab.com/projectreferral/marketing-api/configs"
 	"gitlab.com/projectreferral/marketing-api/internal/models"
 	"gitlab.com/projectreferral/marketing-api/lib/rabbitmq"
 	"gitlab.com/projectreferral/util/pkg/dynamodb"
+	"gitlab.com/projectreferral/util/pkg/http_lib"
+	_ "gitlab.com/projectreferral/util/pkg/http_lib"
+	"gitlab.com/projectreferral/util/pkg/security"
+	_ "gitlab.com/projectreferral/util/pkg/security"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	_ "os"
+	"strconv"
 )
 
 type AdvertWrapper struct {
@@ -22,14 +31,130 @@ type AdvertBuilder interface {
 	UpdateAdvert(http.ResponseWriter, *http.Request)
 	CreateAdvert(http.ResponseWriter, *http.Request)
 	DeleteAdvert(http.ResponseWriter, *http.Request)
+	Apply(http.ResponseWriter, *http.Request)
 }
 
 //interface with the implemented methods will be injected in this variable
 var Advert AdvertBuilder
 
-//get all the adverts for a specific account
-//token validated
+// get advertid, check if the ad exists, update user with adverts applied, update user count for advert
+//TODO:
+// Check if advert is premium or not, if it is then the user (if not premium) should not be allowed to apply to it,
+// the option should be greyed out.
+func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 
+	var ad models.Advert // id from body
+	var ap models.Application
+
+	// Get id from body
+	errDecode := dynamodb.DecodeToMap(r.Body, &ad)
+
+	if !HandleError(errDecode, w, false) {
+
+		// Check if ad exists
+		i, err := a.DC.GetItem(ad.Uuid)
+
+		_ = dynamodb.Unmarshal(i, &ad)
+		_ = dynamodb.Unmarshal(i, &ap)
+
+		if !HandleError(err, w, true) {
+
+			b, _ := json.Marshal(models.ChangeRequest{
+				Field:  "applications",
+				Id:     ap.Uuid,
+				NewMap: ap,
+				Type:   2,
+			})
+
+			// Make a patch request to accounts to update applications
+			res, _ := http_lib.Patch(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
+
+			if res.StatusCode == 200 {
+
+				appliErr := addApplicant(ad, w, r, a)
+
+				if appliErr != nil {
+					fmt.Println(appliErr)
+					return
+				}
+
+				userCount := convertToInt(w, &ad.UserCount)
+
+				if userCount < convertToInt(w, &ad.MaxUsers) {
+					newUserCount := userCount + 1
+
+					cr := &models.ChangeRequest{
+						Field:     "users_applied",
+						NewString: strconv.Itoa(newUserCount),
+						Type:      1,
+					}
+
+					// Update adverts to increase count by 1
+					err := a.UpdateValue(ad.Uuid, cr)
+
+					if !HandleError(err, w, false) {
+
+						b, je := json.Marshal(&cr)
+						if je != nil {
+							http.Error(w, "Error parsing body", http.StatusBadRequest)
+							return
+						}
+
+						w.Write([]byte("Success with payload :"))
+						w.Write(b)
+						w.WriteHeader(http.StatusOK)
+						return
+					}
+				}
+				//reached max users for advert
+				w.WriteHeader(http.StatusPreconditionFailed)
+				w.Write([]byte("Validation failed: User Count exceeds Max Users"))
+				return
+			}
+
+			errorBody, errParse := ioutil.ReadAll(res.Body)
+
+			if errParse != nil {
+				http.Error(w, "Error parsing body", http.StatusBadRequest)
+				return
+			}
+
+			http.Error(w, string(errorBody), res.StatusCode)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusBadRequest)
+	return
+}
+
+func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *AdvertWrapper) error {
+
+	var applyingUser models.User
+
+	email := security.GetClaimsOfJWT().Subject
+	usr := models.User{Email: email}
+
+	b, _ := json.Marshal(usr)
+	res, _ := http_lib.Get(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
+
+	if res.StatusCode == 200 {
+
+		body, _ := ioutil.ReadAll(res.Body)
+		_ = json.Unmarshal(body, &applyingUser)
+
+		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println("Failed to add applicant")
+			return err
+		}
+		fmt.Println("Success: applicant added to ad.")
+		return nil
+	}
+	return nil
+}
 //We check for the recaptcha response and proceed
 //Covert the response body into appropriate models
 //Create a new user using our dynamodb adapter
@@ -39,6 +164,9 @@ func (a *AdvertWrapper) CreateAdvert(w http.ResponseWriter, r *http.Request) {
 
 	dynamoAttr, errDecode := dynamodb.DecodeToDynamoAttribute(r.Body, &ad)
 
+	//this is to ensure we init an empty map
+	dynamodb.AddEmptyCollection(dynamoAttr, "applicants")
+
 	if !HandleError(errDecode, w, false) {
 
 		err := a.DC.CreateItem(dynamoAttr)
@@ -46,7 +174,7 @@ func (a *AdvertWrapper) CreateAdvert(w http.ResponseWriter, r *http.Request) {
 		if !HandleError(err, w, false) {
 			w.WriteHeader(http.StatusOK)
 
-			b,_ := json.Marshal(&ad)
+			b, _ := json.Marshal(&ad)
 			go rabbitmq.BroadcastNewAdvert(b)
 		}
 	}
@@ -158,4 +286,15 @@ func (a *AdvertWrapper) GetBatchAdvert(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+func convertToInt(w http.ResponseWriter, value *string) int {
+
+	//TODO: Change data type to INT in DynamoDB
+	i, err := strconv.Atoi(*value)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
+
+	return i
 }

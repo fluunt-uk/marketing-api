@@ -20,6 +20,7 @@ func TestFunc(w http.ResponseWriter, r *http.Request) {
 //A event message it sent to the queues which are consumed by the relevant services
 func CreateAdvert(w http.ResponseWriter, r *http.Request) {
 
+
 	repo_builder.Advert.CreateAdvert(w,r)
 }
 
@@ -45,3 +46,9 @@ func GetBatchAdverts(w http.ResponseWriter, r *http.Request) {
 
 	repo_builder.Advert.GetBatchAdvert(w,r)
 }
+
+func Apply(w http.ResponseWriter, r *http.Request) {
+
+	repo_builder.Advert.Apply(w,r)
+}
+

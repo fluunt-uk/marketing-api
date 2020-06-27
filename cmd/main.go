@@ -6,10 +6,17 @@ import (
 	"gitlab.com/projectreferral/marketing-api/internal/api"
 	"gitlab.com/projectreferral/marketing-api/internal/models"
 	"gitlab.com/projectreferral/util/util"
+	"log"
 	"os"
 )
 
 func main() {
+	f, err := os.OpenFile(configs.LOG_PATH, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
 
 	//gets all the necessary configs into our object
 	//completes connections
