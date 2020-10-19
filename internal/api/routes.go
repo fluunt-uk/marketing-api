@@ -22,8 +22,8 @@ func SetupEndpoints() {
 	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Delete, configs.AUTH_AUTHENTICATED)).Methods("DELETE")
 	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Update, configs.AUTH_AUTHENTICATED)).Methods("PATCH")
 	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Get, configs.AUTH_AUTHENTICATED)).Methods("GET")
-	_router.HandleFunc("/advert/query", security.WrapHandlerWithSpecialAuth(advert.GetBatch, "")).Methods("GET")
-	_router.HandleFunc("/advert/apply", security.WrapHandlerWithSpecialAuth(advert.Apply, "")).Methods("POST")
+	_router.HandleFunc("/advert/query", security.WrapHandlerWithSpecialAuth(advert.GetBatch, configs.AUTH_AUTHENTICATED)).Methods("GET")
+	_router.HandleFunc("/advert/apply", security.WrapHandlerWithSpecialAuth(advert.Apply, configs.AUTH_AUTHENTICATED)).Methods("POST")
 	_router.HandleFunc("/log", displayLog).Methods("GET")
 
 	handler := withCORS().Handler(_router)

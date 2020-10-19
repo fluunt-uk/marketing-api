@@ -172,10 +172,12 @@ func (a *AdvertWrapper) CreateAdvert(w http.ResponseWriter, r *http.Request) {
 		err := a.DC.CreateItem(dynamoAttr)
 
 		if !HandleError(err, w, false) {
-			w.WriteHeader(http.StatusOK)
 
 			b, _ := json.Marshal(&ad)
 			go rabbitmq.BroadcastNewAdvert(b)
+
+			w.WriteHeader(http.StatusOK)
+			w.Write(b)
 		}
 	}
 }

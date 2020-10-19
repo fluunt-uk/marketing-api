@@ -6,7 +6,7 @@ const (
 
 	/************** DynamoDB configs *************/
 	EU_WEST_2        	 = "eu-west-2"
-	TABLE_NAME        	= "advert"
+	TABLE_NAME        	= "adverts"
 	UNIQUE_IDENTIFIER 	= "id"
 	/*********************************************/
 	/*********** Authentication configs **********/
@@ -29,7 +29,7 @@ var (
 		"Authorization", "Content-Type","Origin",
 		"Accept", "Accept-Encoding", "Accept-Language",
 		"Host", "Connection", "Referer", "Sec-Fetch-Mode",
-		"User-Agent", "Access-Control-Request-Headers", "Access-Control-Request-Method: "}
+		"User-Agent", "Access-Control-Request-Headers", "Access-Control-Request-Method"}
 
 	ALLOWED_METHODS		= []string{"POST", "PUT", "GET", "PATCH"}
 	ALLOWED_ORIGINS		= []string{"*"}
