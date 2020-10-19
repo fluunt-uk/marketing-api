@@ -16,7 +16,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	log.SetOutput(f)
+	if os.Getenv("ENV") == "prod" {log.SetOutput(f)}
 
 	//gets all the necessary configs into our object
 	//completes connections

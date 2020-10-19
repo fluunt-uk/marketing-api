@@ -6,7 +6,7 @@ const (
 
 	/************** DynamoDB configs *************/
 	EU_WEST_2        	 = "eu-west-2"
-	TABLE_NAME        	= "adverts"
+	TABLE_NAME        	= "advert"
 	UNIQUE_IDENTIFIER 	= "id"
 	/*********************************************/
 	/*********** Authentication configs **********/
@@ -22,5 +22,18 @@ const (
 	/************** AccountAPI configs *************/
 	ACCOUNT_API 		= "http://35.179.11.178:5001/account"
 	/*********************************************/
+)
+var (
+	/***************************************** CORS configs ****************************************/
+	ALLOWED_HEADERS		= []string{"g-recaptcha-response",
+		"Authorization", "Content-Type","Origin",
+		"Accept", "Accept-Encoding", "Accept-Language",
+		"Host", "Connection", "Referer", "Sec-Fetch-Mode",
+		"User-Agent", "Access-Control-Request-Headers", "Access-Control-Request-Method: "}
+
+	ALLOWED_METHODS		= []string{"POST", "PUT", "GET", "PATCH"}
+	ALLOWED_ORIGINS		= []string{"*"}
+	/***********************************************************************************************/
 
 )
+

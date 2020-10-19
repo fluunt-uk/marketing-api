@@ -37,7 +37,7 @@ type AdvertBuilder interface {
 //interface with the implemented methods will be injected in this variable
 var Advert AdvertBuilder
 
-// get advertid, check if the ad exists, update user with adverts applied, update user count for advert
+// get advertid, check if the ad exists, update user with advert applied, update user count for advert
 //TODO:
 // Check if advert is premium or not, if it is then the user (if not premium) should not be allowed to apply to it,
 // the option should be greyed out.
@@ -89,7 +89,7 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 						Type:      1,
 					}
 
-					// Update adverts to increase count by 1
+					// Update advert to increase count by 1
 					err := a.UpdateValue(ad.Uuid, cr)
 
 					if !HandleError(err, w, false) {
@@ -226,8 +226,6 @@ func (a *AdvertWrapper) GetAdvert(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Creating a new user with same ID replaces the record
-//Temporary solution
 func (a *AdvertWrapper) UpdateAdvert(w http.ResponseWriter, r *http.Request) {
 	var cr models.ChangeRequest
 

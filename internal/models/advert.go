@@ -38,7 +38,7 @@ type User struct {
 	Premium           bool               		`json:"premium"`
 	//email has been verified
 	Verified      	  bool               		`dynamodbav:"verified"`
-	//all the adverts the user has applied for
+	//all the advert the user has applied for
 	Applications   	  map[string]Advert     	`dynamodbav:"applications"`
 	//active paid subscription
 	ActiveSub         map[string]interface{} 	`dynamodbav:"active_subscription"`
