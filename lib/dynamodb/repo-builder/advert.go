@@ -128,33 +128,6 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *AdvertWrapper) error {
-
-	var applyingUser models.User
-
-	email := security.GetClaimsOfJWT().Subject
-	usr := models.User{Email: email}
-
-	b, _ := json.Marshal(usr)
-	res, _ := http_lib.Get(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
-
-	if res.StatusCode == 200 {
-
-		body, _ := ioutil.ReadAll(res.Body)
-		_ = json.Unmarshal(body, &applyingUser)
-
-		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Println("Failed to add applicant")
-			return err
-		}
-		fmt.Println("Success: applicant added to ad.")
-		return nil
-	}
-	return nil
-}
 //We check for the recaptcha response and proceed
 //Covert the response body into appropriate models
 //Create a new user using our dynamodb adapter
@@ -245,26 +218,6 @@ func (a *AdvertWrapper) UpdateAdvert(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetQueryString(m url.Values, q string, w http.ResponseWriter) string {
-
-	idKeys, ok := m[q]
-
-	if !ok {
-		w.Write([]byte("Url Param are missing"))
-		w.WriteHeader(http.StatusBadRequest)
-		return ""
-	}
-
-	advertID := idKeys[0]
-	if len(advertID) < 1 {
-		w.Write([]byte("Url Param are missing"))
-		w.WriteHeader(http.StatusBadRequest)
-		return ""
-	}
-
-	return advertID
-}
-
 func (a *AdvertWrapper) GetBatchAdvert(w http.ResponseWriter, r *http.Request) {
 	var am models.Advert
 
@@ -297,4 +250,52 @@ func convertToInt(w http.ResponseWriter, value *string) int {
 	}
 
 	return i
+}
+
+func GetQueryString(m url.Values, q string, w http.ResponseWriter) string {
+
+	idKeys, ok := m[q]
+
+	if !ok {
+		w.Write([]byte("Url Param are missing"))
+		w.WriteHeader(http.StatusBadRequest)
+		return ""
+	}
+
+	advertID := idKeys[0]
+	if len(advertID) < 1 {
+		w.Write([]byte("Url Param are missing"))
+		w.WriteHeader(http.StatusBadRequest)
+		return ""
+	}
+
+	return advertID
+}
+
+func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *AdvertWrapper) error {
+
+	var applyingUser models.User
+
+	email := security.GetClaimsOfJWT().Subject
+	usr := models.User{Email: email}
+
+	b, _ := json.Marshal(usr)
+	res, _ := http_lib.Get(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
+
+	if res.StatusCode == 200 {
+
+		body, _ := ioutil.ReadAll(res.Body)
+		_ = json.Unmarshal(body, &applyingUser)
+
+		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println("Failed to add applicant")
+			return err
+		}
+		fmt.Println("Success: applicant added to ad.")
+		return nil
+	}
+	return nil
 }
