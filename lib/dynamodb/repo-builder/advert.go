@@ -37,7 +37,7 @@ type AdvertBuilder interface {
 //interface with the implemented methods will be injected in this variable
 var Advert AdvertBuilder
 
-// get advertid, check if the ad exists, update user with adverts applied, update user count for advert
+// get advertid, check if the ad exists, update user with advert applied, update user count for advert
 //TODO:
 // Check if advert is premium or not, if it is then the user (if not premium) should not be allowed to apply to it,
 // the option should be greyed out.
@@ -89,7 +89,7 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 						Type:      1,
 					}
 
-					// Update adverts to increase count by 1
+					// Update advert to increase count by 1
 					err := a.UpdateValue(ad.Uuid, cr)
 
 					if !HandleError(err, w, false) {
@@ -128,33 +128,6 @@ func (a *AdvertWrapper) Apply(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *AdvertWrapper) error {
-
-	var applyingUser models.User
-
-	email := security.GetClaimsOfJWT().Subject
-	usr := models.User{Email: email}
-
-	b, _ := json.Marshal(usr)
-	res, _ := http_lib.Get(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
-
-	if res.StatusCode == 200 {
-
-		body, _ := ioutil.ReadAll(res.Body)
-		_ = json.Unmarshal(body, &applyingUser)
-
-		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Println("Failed to add applicant")
-			return err
-		}
-		fmt.Println("Success: applicant added to ad.")
-		return nil
-	}
-	return nil
-}
 //We check for the recaptcha response and proceed
 //Covert the response body into appropriate models
 //Create a new user using our dynamodb adapter
@@ -172,10 +145,12 @@ func (a *AdvertWrapper) CreateAdvert(w http.ResponseWriter, r *http.Request) {
 		err := a.DC.CreateItem(dynamoAttr)
 
 		if !HandleError(err, w, false) {
-			w.WriteHeader(http.StatusOK)
 
 			b, _ := json.Marshal(&ad)
 			go rabbitmq.BroadcastNewAdvert(b)
+
+			w.WriteHeader(http.StatusOK)
+			w.Write(b)
 		}
 	}
 }
@@ -226,8 +201,6 @@ func (a *AdvertWrapper) GetAdvert(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Creating a new user with same ID replaces the record
-//Temporary solution
 func (a *AdvertWrapper) UpdateAdvert(w http.ResponseWriter, r *http.Request) {
 	var cr models.ChangeRequest
 
@@ -243,26 +216,6 @@ func (a *AdvertWrapper) UpdateAdvert(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 	}
-}
-
-func GetQueryString(m url.Values, q string, w http.ResponseWriter) string {
-
-	idKeys, ok := m[q]
-
-	if !ok {
-		w.Write([]byte("Url Param are missing"))
-		w.WriteHeader(http.StatusBadRequest)
-		return ""
-	}
-
-	advertID := idKeys[0]
-	if len(advertID) < 1 {
-		w.Write([]byte("Url Param are missing"))
-		w.WriteHeader(http.StatusBadRequest)
-		return ""
-	}
-
-	return advertID
 }
 
 func (a *AdvertWrapper) GetBatchAdvert(w http.ResponseWriter, r *http.Request) {
@@ -297,4 +250,52 @@ func convertToInt(w http.ResponseWriter, value *string) int {
 	}
 
 	return i
+}
+
+func GetQueryString(m url.Values, q string, w http.ResponseWriter) string {
+
+	idKeys, ok := m[q]
+
+	if !ok {
+		w.Write([]byte("Url Param are missing"))
+		w.WriteHeader(http.StatusBadRequest)
+		return ""
+	}
+
+	advertID := idKeys[0]
+	if len(advertID) < 1 {
+		w.Write([]byte("Url Param are missing"))
+		w.WriteHeader(http.StatusBadRequest)
+		return ""
+	}
+
+	return advertID
+}
+
+func addApplicant(ad models.Advert, w http.ResponseWriter, r *http.Request, a *AdvertWrapper) error {
+
+	var applyingUser models.User
+
+	email := security.GetClaimsOfJWT().Subject
+	usr := models.User{Email: email}
+
+	b, _ := json.Marshal(usr)
+	res, _ := http_lib.Get(configs.ACCOUNT_API, b, map[string]string{configs.AUTHORIZED: r.Header.Get(configs.AUTHORIZED)})
+
+	if res.StatusCode == 200 {
+
+		body, _ := ioutil.ReadAll(res.Body)
+		_ = json.Unmarshal(body, &applyingUser)
+
+		err := a.DC.AppendNewMap(applyingUser.Uuid, ad.Uuid, applyingUser, "applicants")
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println("Failed to add applicant")
+			return err
+		}
+		fmt.Println("Success: applicant added to ad.")
+		return nil
+	}
+	return nil
 }

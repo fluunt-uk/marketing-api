@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"gitlab.com/projectreferral/marketing-api/configs"
-	"gitlab.com/projectreferral/util/client"
-	"gitlab.com/projectreferral/util/client/models"
+	"gitlab.com/projectreferral/util/client/rabbitmq"
+	"gitlab.com/projectreferral/util/client/rabbitmq/models"
 	"log"
 	"net/http"
 )
 
-var Client client.QueueClient
+var Client rabbitmq.QueueClient
 
 func BroadcastNewAdvert(body []byte){
 

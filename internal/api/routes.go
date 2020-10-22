@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"gitlab.com/projectreferral/marketing-api/configs"
+	"gitlab.com/projectreferral/marketing-api/internal/api/advert"
 	"gitlab.com/projectreferral/util/pkg/security"
 	"io/ioutil"
 	"log"
@@ -14,26 +15,18 @@ import (
 func SetupEndpoints() {
 	_router := mux.NewRouter()
 
-	_router.HandleFunc("/test", TestFunc)
+	_router.HandleFunc("/test", advert.TestFunc)
 
-	_router.HandleFunc("/apply", security.WrapHandlerWithSpecialAuth(Apply, configs.AUTH_AUTHENTICATED)).Methods("POST")
-	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(CreateAdvert, configs.AUTH_AUTHENTICATED)).Methods("PUT")
-	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(DeleteAdvert, configs.AUTH_AUTHENTICATED)).Methods("DELETE")
-	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(UpdateAdvert, configs.AUTH_AUTHENTICATED)).Methods("PATCH")
-	_router.HandleFunc("/adverts", security.WrapHandlerWithSpecialAuth(GetAdvert, configs.AUTH_AUTHENTICATED)).Methods("GET")
-	_router.HandleFunc("/adverts/query", security.WrapHandlerWithSpecialAuth(GetBatchAdverts, "")).Methods("GET")
-	_router.HandleFunc("/adverts/apply", security.WrapHandlerWithSpecialAuth(Apply, "")).Methods("POST")
+	_router.HandleFunc("/apply", security.WrapHandlerWithSpecialAuth(advert.Apply, configs.AUTH_AUTHENTICATED)).Methods("POST")
+	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Create, configs.AUTH_AUTHENTICATED)).Methods("PUT")
+	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Delete, configs.AUTH_AUTHENTICATED)).Methods("DELETE")
+	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Update, configs.AUTH_AUTHENTICATED)).Methods("PATCH")
+	_router.HandleFunc("/advert", security.WrapHandlerWithSpecialAuth(advert.Get, configs.AUTH_AUTHENTICATED)).Methods("GET")
+	_router.HandleFunc("/advert/query", security.WrapHandlerWithSpecialAuth(advert.GetBatch, configs.AUTH_AUTHENTICATED)).Methods("GET")
+	_router.HandleFunc("/advert/apply", security.WrapHandlerWithSpecialAuth(advert.Apply, configs.AUTH_AUTHENTICATED)).Methods("POST")
 	_router.HandleFunc("/log", displayLog).Methods("GET")
 
-	c := cors.New(cors.Options{
-		AllowedMethods: []string{"POST"},
-		AllowedOrigins: []string{"*"},
-		AllowCredentials: true,
-		AllowedHeaders: []string{"g-recaptcha-response", "Authorization", "Content-Type","Origin","Accept", "Accept-Encoding", "Accept-Language", "Host", "Connection", "Referer", "Sec-Fetch-Mode", "User-Agent", "Access-Control-Request-Headers", "Access-Control-Request-Method: "},
-		OptionsPassthrough: true,
-	})
-
-	handler := c.Handler(_router)
+	handler := withCORS().Handler(_router)
 	log.Fatal(http.ListenAndServe(configs.PORT,handler))
 }
 
@@ -47,4 +40,16 @@ func displayLog(w http.ResponseWriter, r *http.Request){
 	}else{
 		w.Write(b)
 	}
+}
+
+func withCORS() *cors.Cors{
+	c := cors.New(cors.Options{
+		AllowedMethods: configs.ALLOWED_METHODS,
+		AllowedOrigins: configs.ALLOWED_ORIGINS,
+		AllowCredentials: true,
+		AllowedHeaders: configs.ALLOWED_HEADERS,
+		OptionsPassthrough: true,
+	})
+
+	return c
 }
